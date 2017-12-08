@@ -25,7 +25,7 @@ cntj (57)
 """
 
 
-def oddity(iterable, key=None):
+def oddity(iterable, key=lambda v: v):
     """
     Find the element that is different.
 
@@ -40,22 +40,23 @@ def oddity(iterable, key=None):
     None.  If there is more than one different element, an error is raised.
 
     """
-    if key is None:
-        key = lambda v: v
-    summary = collections.defaultdict(list)
+    summary = []
     for element in iterable:
-        summary[key(element)].append(element)
-
-    if len(summary) == 1:
-        k, _ = summary.popitem()
-        return k, None
-    elif len(summary) == 2:
-        common, different = list(summary.items())
-        if len(common[1]) == 1:
-            common, different = different, common
-        return common[0], different[1][0]
-    else:
-        raise ValueError("Wrong number of distinct values")
+        if not summary:
+            summary.append(element)
+            continue
+        if key(element) == key(summary[0]):
+            if summary[1:]:  # this element matches first, but not second
+                return key(summary[0]), summary[1]
+            continue  # otherwise ignore this element because it's the same as last
+        if not summary[1:]:
+            summary.append(element)
+            continue
+        assert key(element) == key(summary[1]), (key(element), key(summary[1]))
+        # this element matches second, but not first
+        return key(summary[1]), summary[0]
+    # if we get here, then the last element in the list was the odd one out, or all equal
+    return key(summary[0]), (summary[1] if summary[1:] else None)
 
 @pytest.mark.parametrize("iterable, key, answer", [
     ("aaaaba", None, ("a", "b")),
@@ -148,7 +149,7 @@ if __name__ == '__main__':
         towers.read(finput)
 
     bottom = towers.bottom_program()
-    print(f"Part 1: the bottom program is {bottom}")
+    print("Part 1: the bottom program is {bottom}".format(bottom=bottom))
 
     who, how_much = towers.imbalance()
-    print(f"Part 2: {who} should be {how_much} to balance")
+    print("Part 2: {who} should be {how_much} to balance".format(who=who, how_much=how_much))
